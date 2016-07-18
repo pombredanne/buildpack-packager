@@ -111,37 +111,40 @@ dependencies: []
     end
   end
 
-#   context 'no dependency with version found for default in manifest' do
-#     let(:manifest) {<<-MANIFEST
-# #{base_manifest_contents}
-# default_versions:
-#   - name: ruby
-#     version: 1.1.1
-#   - name: python
-#     version: 3.3.5
-# dependencies:
-#   - name: ruby
-#     uri: https://a.org
-#     version: 9.9.9
-#     md5: 3a2
-#     cf_stacks: [cflinuxfs2]
-#   - name: python
-#     uri: https://a.org
-#     version: 9.9.9
-#     md5: 3a2
-#     cf_stacks: [cflinuxfs2]
-#     MANIFEST
-#     }
-#
-#     it_behaves_like "a link to the cloud foundry docs is output"
-#
-#     it 'fails and errors stating the context' do
-#       output, status = run_packager_binary(buildpack_dir, flags)
-#       expect(output).to include("The buildpack manifest is malformed: a 'default_versions' entry " +
-#                                 "python 3.3.5, ruby 1.1.1 was specified by the buildpack manifest, but no 'dependencies' entries " +
-#                                 "for python version 3.3.5, ruby 1.1.1 were found in the buildpack manifest.")
-#       expect(status).to_not be_success
-#     end
-#   end
+  context 'no dependency with version found for default in manifest' do
+    let(:manifest) {<<-MANIFEST
+#{base_manifest_contents}
+default_versions:
+  - name: ruby
+    version: 1.1.1
+  - name: python
+    version: 3.3.5
+dependencies:
+  - name: ruby
+    uri: https://a.org
+    version: 9.9.9
+    md5: 3a2
+    cf_stacks: [cflinuxfs2]
+  - name: python
+    uri: https://a.org
+    version: 9.9.9
+    md5: 3a2
+    cf_stacks: [cflinuxfs2]
+    MANIFEST
+    }
+
+    it_behaves_like "a link to the cloud foundry docs is output"
+
+    it 'fails and errors stating the context' do
+      output, status = run_packager_binary(buildpack_dir, flags)
+      expect(output).to include("The buildpack manifest is malformed: a 'default_versions' entry for " +
+                                "python 3.3.5 was specified by the buildpack manifest, but no 'dependencies' entry " +
+                                  'for python version 3.3.5 was found in the buildpack manifest.')
+      expect(output).to include("The buildpack manifest is malformed: a 'default_versions' entry for " +
+                                  "ruby 1.1.1 was specified by the buildpack manifest, but no 'dependencies' entry " +
+                                  'for ruby 1.1.1 was found in the buildpack manifest.')
+      expect(status).to_not be_success
+    end
+  end
 
 end
