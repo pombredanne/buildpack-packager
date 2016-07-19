@@ -30,7 +30,11 @@ module Buildpack
       manifest_data = parser.parse_file(@manifest_path)
 
       @errors = {}
-      @errors[:default_version] = validate_default_versions(manifest_data) if manifest_data["default_versions"]
+
+      if manifest_data['default_versions']
+        default_version_errors = validate_default_versions(manifest_data)
+        @errors[:default_version] = default_version_errors unless default_version_errors.empty?
+      end
 
       @errors[:manifest_parser_errors] = parser.errors unless parser.errors.empty?
     end

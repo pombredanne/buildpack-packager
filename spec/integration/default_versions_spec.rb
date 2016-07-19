@@ -36,6 +36,29 @@ exclude_files: []
     end
   end
 
+  context 'defaults and dependencies are in agreement' do
+    let(:manifest) {<<-MANIFEST
+#{base_manifest_contents}
+default_versions:
+  - name: python
+    version: 3.3.5
+dependencies:
+  - name: python
+    version: 3.3.5
+    uri: http://example.com/
+    md5: 68901bbf8a04e71e0b30aa19c3946b21
+    cf_stacks:
+      - cflinuxfs2
+    MANIFEST
+    }
+
+    it 'emits no errors' do
+      _, status = run_packager_binary(buildpack_dir, flags)
+
+      expect(status).to be_success
+    end
+  end
+
   context 'multiple default versions for a dependency' do
     let(:manifest) {<<-MANIFEST
 #{base_manifest_contents}
