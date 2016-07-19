@@ -2,6 +2,8 @@ require 'kwalify'
 require 'kwalify/parser/yaml-patcher'
 require 'uri'
 
+require 'buildpack/manifest_dependency'
+
 module Buildpack
   class ManifestValidator
     class ManifestValidationError < StandardError; end
@@ -26,97 +28,58 @@ module Buildpack
       validator = Kwalify::Validator.new(schema)
       parser = Kwalify::Yaml::Parser.new(validator)
       manifest_data = parser.parse_file(@manifest_path)
-      validate_default_versions(manifest_data) if manifest_data["default_versions"]
 
       @errors = {}
+      @errors[:default_version] = validate_default_versions(manifest_data) if manifest_data["default_versions"]
+
       @errors[:manifest_parser_errors] = parser.errors unless parser.errors.empty?
     end
 
     def validate_default_versions(manifest_data)
-      default_versions = manifest_data["default_versions"]
-      default_dependency_names = default_versions.map { |dep| dep['name'] }
-      dependencies = manifest_data["dependencies"]
-      dependency_names = dependencies.map { |dep| dep['name'] }
-      something_was_invalid = false
-      error_messaging = []
+      error_messages = []
 
-      if has_duplicate_names?(default_dependency_names)
-        something_was_invalid = true
-        duplicates = default_dependency_names.find_all { |dep| default_dependency_names.count(dep) > 1 }.uniq
-        duplicates.each do |duplicate|
-          error_messaging << "- #{duplicate} had more than one 'default_versions' entry in the buildpack manifest."
-        end
-      end
+      default_versions = create_manifest_dependencies(manifest_data['default_versions'])
+      dependency_versions = create_manifest_dependencies(manifest_data['dependencies'])
 
-      if dependency_name_not_found?(default_dependency_names, dependency_names)
-        something_was_invalid = true
-        missing_dependencies = missing_dependencies(default_dependency_names, dependency_names)
-        missing_dependencies.each do |missing_dependency|
-          error_messaging << "- a 'default_versions' entry for #{missing_dependency} was specified by the buildpack manifest, but no " +
-                             "'dependencies' entry with the name #{missing_dependency} was found in the buildpack manifest."
-        end
-      end
+      error_messages += validate_no_duplicate_names(default_versions)
+      error_messages += validate_defaults_in_dependencies(default_versions, dependency_versions)
+      wrap_errors_with_common_text(error_messages)
 
-      # if dependency_version_not_found?(default_dependency_names, dependency_names)
-      #   something_was_invalid = true
-      #   default_dependency_names_in_dependencies = default_dependency_names - missing_dependencies(default_dependency_names, dependency_names)
-      #   default_name_to_version_hash = Hash[default_dependencies.map {|dep| [dep['name'], dep['version']]}]
-      #   default_dependency_names_in_dependencies.each do |dep_name|
-      #     matched_dependencies = dependencies.select{ |dep| dep['name'] == dep_name }
-      #     matched_dependencies.select { |dep| dep }
-      #   end
-      #   missing_dependency_versions = {}
-      #   STDERR.puts "The buildpack manifest is malformed: a 'default_versions' entry " +
-      #               "#{} was specified by the buildpack manifest, but no 'dependencies' entries " +
-      #               "for #{} were found in the buildpack manifest."
-      # end
+      error_messages
+    end
 
-      if something_was_invalid
-        error_messaging.unshift("The buildpack manifest is malformed:")
-        error_messaging << "For more information, see " +
-                           "https://docs.cloudfoundry.org/buildpacks/custom.html#specifying-default-versions"
-        STDERR.puts error_messaging.join("\n")
-        exit 1
+    def create_manifest_dependencies(dependency_entries)
+      dependency_entries.map do |dependency|
+        ManifestDependency.new(dependency['name'], dependency['version'])
       end
     end
 
-    def has_duplicate_names?(default_dependency_names)
-      default_dependency_names.length != default_dependency_names.uniq.length
+    def validate_no_duplicate_names(default_versions)
+      default_versions_names = default_versions.map { |default_version| default_version.name }
+      duplicate_names = default_versions_names.find_all { |dep| default_versions_names.count(dep) > 1 }.uniq
+
+      duplicate_names.map do |name|
+        "- #{name} had more than one 'default_versions' entry in the buildpack manifest."
+      end
     end
 
-    def missing_dependencies(default_dependency_names, dependency_names)
-      default_dependency_names - dependency_names
+    def validate_defaults_in_dependencies(default_versions, dependency_versions)
+      unmatched_dependencies = default_versions.select { |d| !dependency_versions.include?(d) }
+
+      unmatched_dependencies.map do |dependency|
+        name_version = "#{dependency.name} #{dependency.version}"
+
+        "a 'default_versions' entry for #{name_version} was specified by the buildpack manifest, " +
+          "but no 'dependencies' entry for #{name_version} was found in the buildpack manifest."
+      end
     end
 
-    def dependency_name_not_found?(default_dependency_names, dependency_names)
-      !(default_dependency_names - dependency_names).empty?
-    end
-
-    def dependency_version_not_found?(default_dependencies, dependencies)
-     deps_match = default_dependencies.map do |default_dependency|
-        default_name = default_dependency['name']
-        default_version = default_dependency['version']
-        matched_dependencies = dependencies.select{ |dep| dep['name'] == default_name }
-        matched = matched_dependencies.find {|dep| dep['version'] == default_version}
-        !matched.nil?
-     end
-     deps_match.all?
+    def wrap_errors_with_common_text(error_messages)
+      if error_messages.any?
+        error_messages.unshift('The buildpack manifest is malformed:')
+        error_messages<< 'For more information, see https://docs.cloudfoundry.org/buildpacks/custom.html#specifying-default-versions'
+      end
     end
   end
 end
-class DependencySet
-  attr_accessor :dependencies
-  def initialize(dependencies)
-    @dependencies = dependencies
-  end
-end
 
-class Dependency
-  attr_accessor :name
-  attr_accessor :version
-
-  def initialize(name, version)
-    @name = name
-    @version = version
-  end
-end

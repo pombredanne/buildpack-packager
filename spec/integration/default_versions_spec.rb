@@ -101,17 +101,16 @@ dependencies: []
 
     it 'fails and errors stating the context' do
       output, status = run_packager_binary(buildpack_dir, flags)
-      expect(output).to include("a 'default_versions' entry " +
-                           "for python was specified by the buildpack manifest, but no " +
-                           "'dependencies' entry with the name python was found in the buildpack manifest.")
-      expect(output).to include("a 'default_versions' entry " +
-                                  "for ruby was specified by the buildpack manifest, but no " +
-                                  "'dependencies' entry with the name ruby was found in the buildpack manifest.")
+
+      expect(output).to include("a 'default_versions' entry for python 3.3.5 was specified by the buildpack manifest, " +
+                                  "but no 'dependencies' entry for python 3.3.5 was found in the buildpack manifest.")
+      expect(output).to include("a 'default_versions' entry for ruby 4.3.5 was specified by the buildpack manifest, " +
+                                  "but no 'dependencies' entry for ruby 4.3.5 was found in the buildpack manifest.")
       expect(status).to_not be_success
     end
   end
 
-  xcontext 'no dependency with version found for default in manifest' do
+  context 'no dependency with version found for default in manifest' do
     let(:manifest) {<<-MANIFEST
 #{base_manifest_contents}
 default_versions:
@@ -137,14 +136,12 @@ dependencies:
 
     it 'fails and errors stating the context' do
       output, status = run_packager_binary(buildpack_dir, flags)
-      expect(output).to include("The buildpack manifest is malformed: a 'default_versions' entry for " +
-                                "python 3.3.5 was specified by the buildpack manifest, but no 'dependencies' entry " +
-                                  'for python version 3.3.5 was found in the buildpack manifest.')
-      expect(output).to include("The buildpack manifest is malformed: a 'default_versions' entry for " +
-                                  "ruby 1.1.1 was specified by the buildpack manifest, but no 'dependencies' entry " +
-                                  'for ruby 1.1.1 was found in the buildpack manifest.')
+
+      expect(output).to include("a 'default_versions' entry for python 3.3.5 was specified by the buildpack manifest, " +
+                                  "but no 'dependencies' entry for python 3.3.5 was found in the buildpack manifest.")
+      expect(output).to include("a 'default_versions' entry for ruby 1.1.1 was specified by the buildpack manifest, " +
+                                  "but no 'dependencies' entry for ruby 1.1.1 was found in the buildpack manifest.")
       expect(status).to_not be_success
     end
   end
-
 end
