@@ -111,7 +111,7 @@ dependencies: []
     end
   end
 
-  context 'no dependency with version found for default in manifest' do
+  xcontext 'no dependency with version found for default in manifest' do
     let(:manifest) {<<-MANIFEST
 #{base_manifest_contents}
 default_versions:
@@ -133,7 +133,7 @@ dependencies:
     MANIFEST
     }
 
-    it_behaves_like "a link to the cloud foundry docs is output"
+    it_behaves_like "general output that helps with the error is produced"
 
     it 'fails and errors stating the context' do
       output, status = run_packager_binary(buildpack_dir, flags)

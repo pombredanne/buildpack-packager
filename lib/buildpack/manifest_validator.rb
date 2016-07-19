@@ -57,19 +57,19 @@ module Buildpack
         end
       end
 
-      if dependency_version_not_found?(default_dependency_names, dependency_names)
-        something_was_invalid = true
-        default_dependency_names_in_dependencies = default_dependency_names - missing_dependencies(default_dependency_names, dependency_names)
-        default_name_to_version_hash = Hash[default_dependencies.map {|dep| [dep['name'], dep['version']]}]
-        default_dependency_names_in_dependencies.each do |dep_name|
-          matched_dependencies = dependencies.select{ |dep| dep['name'] == dep_name }
-          matched_dependencies.select { |dep| dep }
-        end
-        missing_dependency_versions = {}
-        STDERR.puts "The buildpack manifest is malformed: a 'default_versions' entry " +
-                    "#{} was specified by the buildpack manifest, but no 'dependencies' entries " +
-                    "for #{} were found in the buildpack manifest."
-      end
+      # if dependency_version_not_found?(default_dependency_names, dependency_names)
+      #   something_was_invalid = true
+      #   default_dependency_names_in_dependencies = default_dependency_names - missing_dependencies(default_dependency_names, dependency_names)
+      #   default_name_to_version_hash = Hash[default_dependencies.map {|dep| [dep['name'], dep['version']]}]
+      #   default_dependency_names_in_dependencies.each do |dep_name|
+      #     matched_dependencies = dependencies.select{ |dep| dep['name'] == dep_name }
+      #     matched_dependencies.select { |dep| dep }
+      #   end
+      #   missing_dependency_versions = {}
+      #   STDERR.puts "The buildpack manifest is malformed: a 'default_versions' entry " +
+      #               "#{} was specified by the buildpack manifest, but no 'dependencies' entries " +
+      #               "for #{} were found in the buildpack manifest."
+      # end
 
       if something_was_invalid
         error_messaging.unshift("The buildpack manifest is malformed:")
